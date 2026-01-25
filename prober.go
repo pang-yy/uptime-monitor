@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"log/slog"
 	"net/http"
 	"sync"
 	"time"
@@ -18,7 +18,6 @@ type Prober struct {
 	stopC chan struct{}
 }
 
-// Need: endpoint, timeout, where to send result to, waitgroup
 func NewProber(endpoint string, timeout time.Duration, interval time.Duration, wg *sync.WaitGroup) *Prober {
 	probeResChan := make(chan ProbeResult, 3)
 	stopChan := make(chan struct{}, 1)
@@ -43,6 +42,7 @@ func NewProber(endpoint string, timeout time.Duration, interval time.Duration, w
 		}
 	}()
 
+	slog.Info("Prober spawned", "endpoint", endpoint)
 	return prober
 }
 
@@ -53,7 +53,7 @@ func newClient(timeout time.Duration) (*http.Client) {
 }
 
 func probe(customClient *http.Client, url string) ProbeResult {
-	fmt.Println("probing ", url)
+	slog.Info("Probing endpoint", "endpoint", url)
 	r, err := customClient.Get(url)
 	return ProbeResult{
 		endpoint: url,

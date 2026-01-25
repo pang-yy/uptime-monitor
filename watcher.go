@@ -1,8 +1,7 @@
 package main
 
 import (
-	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"sync"
@@ -28,7 +27,8 @@ type Targets struct {
 func NewWatcher(filename string, interval time.Duration, wg *sync.WaitGroup) *Watcher {
 	absFilename, err := filepath.Abs(filepath.Clean(filename))
 	if err != nil {
-		log.Fatal("failed to resolve filename")
+		slog.Error("Failed to resolve filename", "file", err)
+		return nil
 	}
 
 	stopChan := make(chan struct{}, 1)
@@ -39,7 +39,7 @@ func NewWatcher(filename string, interval time.Duration, wg *sync.WaitGroup) *Wa
 	}
 	targets, lastModTime, err := reloadTargetsIfChange(absFilename, time.Time{})
 	if err != nil {
-		fmt.Println(err)
+		slog.Error("Failed to reload target list file", "error", err)
 		resChan <- []Target{}
 	} else {
 		resChan <- targets
@@ -61,7 +61,7 @@ func NewWatcher(filename string, interval time.Duration, wg *sync.WaitGroup) *Wa
 				// If no new update, do nothing
 				// If has new update, pass new Target list
 				if err != nil {
-					fmt.Println(err)
+					slog.Error("Failed to reload target list file", "error", err)
 					resChan <- []Target{}
 				} else if newLastModTime.After(lastModTime) {
 					lastModTime = newLastModTime
@@ -77,26 +77,31 @@ func NewWatcher(filename string, interval time.Duration, wg *sync.WaitGroup) *Wa
 }
 
 func reloadTargetsIfChange(filename string, lastModTime time.Time) ([]Target, time.Time, error) {
-	fmt.Println("reloading")
+	slog.Info("Reloading target list file", "file", filename)
 	info, err := os.Stat(filename)
 	if err != nil {
+		slog.Error("Failed to obtain stats of target list file", "file", filename)
 		return nil, lastModTime, err
 	}
 
 	if !info.ModTime().After(lastModTime) {
+		slog.Info("Target list file unchanged", "file", filename)
 		return nil, lastModTime, nil
 	}
 
 	f, err := os.Open(filename)
 	if err != nil {
+		slog.Error("Failed to open target list file", "file", filename)
 		return nil, lastModTime, err
 	}
 	defer f.Close()
 
 	var targets Targets
 	if err := yaml.NewDecoder(f).Decode(&targets); err != nil {
+		slog.Error("Failed to parse target list file", "file", filename)
 		return nil, lastModTime, err
 	}
 
+	slog.Info("Succesfully parse target list file", "file", filename)
 	return targets.TargetList, info.ModTime(), nil
 }

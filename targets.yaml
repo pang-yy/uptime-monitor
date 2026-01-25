@@ -8,3 +8,9 @@ targets:
   - url: "https://httpbin.org/status/200"
     labels:
       name: "HTTPS BIN 200"
+  - url: "https://github.com/status"
+    labels:
+      name: "Github"
+  - url: "https://awofuhuaewfliauef.com/status"
+    labels:
+      name: "Anything"

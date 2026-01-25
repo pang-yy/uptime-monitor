@@ -1,13 +1,13 @@
 package main
 
 import (
-	"fmt"
+	"log/slog"
 	"sync"
 	"time"
 )
 
 func main() {
-	fmt.Println("Started...")
+	slog.Info("Uptime monitor")
 
 	stopAll := make(chan struct{})
 	var wg sync.WaitGroup
@@ -37,11 +37,11 @@ func compTargets(targetsFile string, wg *sync.WaitGroup, stopChan chan struct{})
 		select {
 		case targetList := <-watcher.targetsC:
 			if len(targetList) == 0 {
-				fmt.Println("Got empty list, either error or no targets")
+				slog.Info("Target list is empty, either error or no targets")
 			} else {
 				for _, t := range targetList {
 					if tpa, exists := targetMap[t.Endpoint]; !exists { // Use endpoint for now, need to change in future
-						fmt.Println("trying to spawn new prober")
+						slog.Info("Spawning new prober for new target", "endpoint", t.Endpoint)
 						newProber := NewProber(t.Endpoint, probeTargetTimeout, probeTargetInterval, wg)
 						analyserStopChan := make(chan struct{}, 1)
 						go analyse(wg, newProber.probeResC, analyserStopChan)
@@ -77,9 +77,9 @@ func analyse(wg *sync.WaitGroup, probeResChan chan ProbeResult, stopChan chan st
 		select {
 		case res := <- probeResChan:
 				if res.err != nil {
-					fmt.Println(res.endpoint, ": ", res.err)
+					slog.Error("Endpoint probing error", "error", res.err)
 				} else {
-					fmt.Println(res.endpoint, ": ", res.resp.StatusCode)
+					slog.Info("Endpoint probing successful", "endpoint", res.endpoint, "code", res.resp.StatusCode)
 				}
 		case <- stopChan:
 			return
