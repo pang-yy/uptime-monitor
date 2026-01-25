@@ -15,32 +15,6 @@ func main() {
 	wg.Wait()
 }
 
-/*
-func main() {
-	fmt.Println("Started...")
-
-	var urls = []string{
-		"http://httpbin.org/status/200",
-		"http://httpbin.org/status/404",
-		"http://192.168.0.101:8887/health",
-
-		"https://httpbin.org/status/200",
-		"https://httpbin.org/status/404",
-		"https://192.168.0.101:8887/health",
-		"https://notes.local",
-	}
-
-	timeout := time.Duration(time.Second * 2)
-	var wg sync.WaitGroup
-	probeResChan := make(chan ProbeResult, 20)
-	for _, url := range urls {
-		wg.Add(2)
-		go probe(&wg, probeResChan, newClient(timeout), url)
-		go analyse(&wg, probeResChan)
-	}
-	wg.Wait()
-}*/
-
 type TargetProberAnalyser struct {
 	target Target
 	prober *Prober

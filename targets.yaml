@@ -1,13 +1,4 @@
 targets:
-  - url: "http://example.com"
-    labels:
-      name: "Example"
-  - url: "https://google.com"
-    labels:
-      name: "Google"
-  - url: "https://youtube.com"
-    labels:
-      name: "Youtube"
   - url: "https://httpbin.org/status/404"
     labels:
       name: "HTTPS BIN 404"
