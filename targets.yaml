@@ -1,0 +1,19 @@
+targets:
+  - url: "http://example.com"
+    labels:
+      name: "Example"
+  - url: "https://google.com"
+    labels:
+      name: "Google"
+  - url: "https://youtube.com"
+    labels:
+      name: "Youtube"
+  - url: "https://httpbin.org/status/404"
+    labels:
+      name: "HTTPS BIN 404"
+  - url: "http://httpbin.org/status/404"
+    labels:
+      name: "HTTP BIN 404"
+  - url: "https://httpbin.org/status/200"
+    labels:
+      name: "HTTPS BIN 200"
