@@ -11,6 +11,4 @@ targets:
   - url: "https://github.com/status"
     labels:
       name: "Github"
-  - url: "https://awofuhuaewfliauef.com/status"
-    labels:
-      name: "Anything"
+

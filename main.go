@@ -30,7 +30,6 @@ func compTargets(targetsFile string, wg *sync.WaitGroup, stopChan chan struct{})
 	watcher := NewWatcher(targetsFile, readTargetInterval, wg)
 
 	// TODO:
-	//	- implement ways to remove targets
 	//  - use other things as unique key in map
 
 	for {
@@ -38,13 +37,25 @@ func compTargets(targetsFile string, wg *sync.WaitGroup, stopChan chan struct{})
 		case targetList := <-watcher.targetsC:
 			if len(targetList) == 0 {
 				slog.Info("Target list is empty, either error or no targets")
+				for _, tpa := range targetMap {
+					tpa.prober.stopC <- struct{}{}
+					tpa.analyserStopC <- struct{}{}
+				}
 			} else {
+				// Temporary map used for removing targets later
+				tempTargetMap := make(map[string]bool, len(targetList))
+
+				// Add targets
 				for _, t := range targetList {
+					tempTargetMap[t.Endpoint] = true
 					if tpa, exists := targetMap[t.Endpoint]; !exists { // Use endpoint for now, need to change in future
 						slog.Info("Spawning new prober for new target", "endpoint", t.Endpoint)
 						newProber := NewProber(t.Endpoint, probeTargetTimeout, probeTargetInterval, wg)
 						analyserStopChan := make(chan struct{}, 1)
+
+						wg.Add(1)
 						go analyse(wg, newProber.probeResC, analyserStopChan)
+
 						targetMap[t.Endpoint] = TargetProberAnalyser{
 							target: t,
 							prober: newProber,
@@ -52,11 +63,17 @@ func compTargets(targetsFile string, wg *sync.WaitGroup, stopChan chan struct{})
 						}
 					} else {
 						// Still replace, because labels may change
-						targetMap[t.Endpoint] = TargetProberAnalyser{
-							target: t,
-							prober: tpa.prober,
-							analyserStopC: tpa.analyserStopC,
-						}
+						tpa.target = t
+						targetMap[t.Endpoint] = tpa
+					}
+				}
+
+				// Remove targets
+				for key, tpa := range targetMap {
+					if(!tempTargetMap[key]) {
+						tpa.prober.stopC <- struct{}{}
+						tpa.analyserStopC <- struct{}{}
+						delete(targetMap, key)
 					}
 				}
 			}
@@ -82,6 +99,7 @@ func analyse(wg *sync.WaitGroup, probeResChan chan ProbeResult, stopChan chan st
 					slog.Info("Endpoint probing successful", "endpoint", res.endpoint, "code", res.resp.StatusCode)
 				}
 		case <- stopChan:
+			slog.Info("Shutting down analyser")
 			return
 		}
 	}

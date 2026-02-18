@@ -37,6 +37,7 @@ func NewProber(endpoint string, timeout time.Duration, interval time.Duration, w
 			case <-ticker.C:
 				prober.probeResC <- probe(client, endpoint)
 			case <-prober.stopC:
+				slog.Info("Shutting down prober", "endpoint", endpoint)
 				return
 			}
 		}
